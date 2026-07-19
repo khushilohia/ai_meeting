@@ -3,10 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import TranscriptSegment from "@/components/TranscriptSegment";
+import MeetingActions from "@/components/MeetingActions";
 
 export const dynamic = "force-dynamic";
 
-type Meeting = { id: number; title: string; started_at: string; ended_at: string | null; summary: string | null; action_items: string | null };
+type Meeting = { id: number; title: string; started_at: string; ended_at: string | null; summary: string | null; action_items: string | null; tags: string };
 type Segment = { id: number; speaker: string | null; text: string; ts_ms: number; bookmarked: number };
 
 function fmt(ms: number) {
@@ -37,6 +38,9 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
         <p className="text-sm text-zinc-500">
           {meeting.started_at} {meeting.ended_at ? `→ ${meeting.ended_at}` : "· live"}
         </p>
+        <div className="mt-2">
+          <MeetingActions id={meeting.id} title={meeting.title} tags={JSON.parse(meeting.tags || "[]")} />
+        </div>
         {!meeting.ended_at && (
           <Link href={`/live/${meeting.id}`} className="mt-2 inline-block rounded bg-emerald-700 px-3 py-1.5 text-sm text-white">
             Open live view
