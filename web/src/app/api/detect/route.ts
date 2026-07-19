@@ -13,7 +13,7 @@ const client = new Anthropic();
 export async function POST(req: NextRequest) {
   const user = requireUser(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const { recentTranscript } = (await req.json()) as { recentTranscript?: string };
+  const { recentTranscript } = (await req.json().catch(() => ({}))) as { recentTranscript?: string };
   if (!recentTranscript?.trim()) {
     return NextResponse.json({ error: "recentTranscript is required" }, { status: 400 });
   }

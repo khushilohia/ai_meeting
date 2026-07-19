@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Company-aware answers during Meet, Teams, and Zoom calls",
   "permissions": ["tabCapture", "sidePanel", "storage", "tabs"],
-  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*", "https://*/*"],
   "background": { "service_worker": "background.js" },
   "side_panel": { "default_path": "sidepanel.html" },
   "action": { "default_title": "Open Meeting Copilot" }

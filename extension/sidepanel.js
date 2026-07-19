@@ -2,13 +2,22 @@
 const $ = (id) => document.getElementById(id);
 
 let apiBase = "http://localhost:3000";
-chrome.storage.local.get("apiBase", ({ apiBase: saved }) => {
-  if (saved) apiBase = saved;
+let apiToken = "";
+chrome.storage.local.get(["apiBase", "apiToken"], (saved) => {
+  if (saved.apiBase) apiBase = saved.apiBase;
+  if (saved.apiToken) apiToken = saved.apiToken;
   $("apiBase").value = apiBase;
+  $("apiToken").value = apiToken;
+  if (!apiToken) setStatus("Set your API token in Settings (copy it from your Profile page)");
 });
 $("apiBase").addEventListener("change", (e) => {
   apiBase = e.target.value.replace(/\/$/, "") || "http://localhost:3000";
   chrome.storage.local.set({ apiBase });
+});
+$("apiToken").addEventListener("change", (e) => {
+  apiToken = e.target.value.trim();
+  chrome.storage.local.set({ apiToken });
+  setStatus(apiToken ? "Token saved" : "Idle");
 });
 
 let meetingId = null;
@@ -171,6 +180,24 @@ function showAnswer({ answer, confident, sources }) {
   }
 }
 
+// ---------- define a term ----------
+$("defineForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const term = $("defineInput").value.trim();
+  if (!term) return;
+  showAnswer({ answer: "Defining…", confident: true, sources: [] });
+  try {
+    const d = await api("POST", "/api/define", { term });
+    showAnswer({
+      answer: `${d.term} — ${d.definition}`,
+      confident: d.fromKnowledgeBase,
+      sources: d.fromKnowledgeBase ? [{ source: "your knowledge base" }] : [],
+    });
+  } catch (err) {
+    if (err.message !== "unauthorized") showAnswer({ answer: `Error: ${err.message}`, confident: false, sources: [] });
+  }
+});
+
 // ---------- auto-surfacing (Phase 3.5) ----------
 async function autoDetect() {
   if (recentForDetect.length === 0) return;
@@ -205,9 +232,13 @@ function showSuggestion({ query, suggestion }) {
 async function api(method, path, body) {
   const res = await fetch(apiBase + path, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiToken}` },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) {
+    setStatus("Unauthorized — set a valid API token in Settings (Profile page → copy token)");
+    throw new Error("unauthorized");
+  }
   if (!res.ok) throw new Error(`${path} → ${res.status}`);
   return res.json();
 }

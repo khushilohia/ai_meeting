@@ -9,7 +9,7 @@ const client = new Anthropic();
 export async function POST(req: NextRequest) {
   const user = requireUser(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const { term } = (await req.json()) as { term?: string };
+  const { term } = (await req.json().catch(() => ({}))) as { term?: string };
   if (!term?.trim() || term.length > 100) {
     return NextResponse.json({ error: "term is required (max 100 chars)" }, { status: 400 });
   }

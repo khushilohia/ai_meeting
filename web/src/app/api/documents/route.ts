@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   const user = requireUser(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const { title, content } = (await req.json()) as { title?: string; content?: string };
+  const { title, content } = (await req.json().catch(() => ({}))) as { title?: string; content?: string };
   if (!title?.trim() || !content?.trim()) {
     return NextResponse.json({ error: "title and content are required" }, { status: 400 });
   }

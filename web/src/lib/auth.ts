@@ -22,6 +22,7 @@ export function verifyPassword(password: string, stored: string): boolean {
 
 // ---------- sessions ----------
 export function createSession(userId: number): { token: string; maxAge: number } {
+  db.prepare("DELETE FROM sessions WHERE expires_at <= datetime('now')").run(); // opportunistic cleanup
   const token = randomBytes(32).toString("hex");
   db.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', ?))").run(
     token,

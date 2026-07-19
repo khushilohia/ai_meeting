@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   const user = requireUser(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const { query } = (await req.json()) as { query?: string };
+  const { query } = (await req.json().catch(() => ({}))) as { query?: string };
   if (!query?.trim()) return NextResponse.json({ error: "query is required" }, { status: 400 });
 
   const started = Date.now();

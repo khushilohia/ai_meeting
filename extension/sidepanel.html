@@ -30,12 +30,16 @@
     <form id="askForm">
       <input id="askInput" placeholder="Quick lookup — ask your knowledge base…" />
     </form>
+    <form id="defineForm">
+      <input id="defineInput" placeholder="Define a term or acronym…" />
+    </form>
     <div id="answer"></div>
     <div id="suggestions"></div>
     <div id="transcript"></div>
     <details>
       <summary>Settings</summary>
       <label>API base <input id="apiBase" placeholder="http://localhost:3000" /></label>
+      <label>API token (from your Profile page) <input id="apiToken" type="password" placeholder="mc_…" /></label>
     </details>
     <script src="sidepanel.js"></script>
   </body>
