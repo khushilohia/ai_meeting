@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
 import UploadForm from "@/components/UploadForm";
 import DeleteDocButton from "@/components/DeleteDocButton";
 import AskBox from "@/components/AskBox";
@@ -7,14 +9,17 @@ export const dynamic = "force-dynamic";
 
 type DocRow = { id: number; title: string; created_at: string; chunk_count: number };
 
-export default function KnowledgePage() {
+export default async function KnowledgePage() {
+  const user = await currentUser();
+  if (!user) redirect("/login");
   const docs = db
     .prepare(
       `SELECT d.id, d.title, d.created_at, COUNT(c.id) AS chunk_count
        FROM documents d LEFT JOIN chunks c ON c.document_id = d.id
+       WHERE d.user_id = ?
        GROUP BY d.id ORDER BY d.created_at DESC`
     )
-    .all() as DocRow[];
+    .all(user.id) as DocRow[];
 
   return (
     <div className="space-y-8">

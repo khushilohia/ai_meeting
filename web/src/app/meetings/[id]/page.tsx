@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
 import TranscriptSegment from "@/components/TranscriptSegment";
 
 export const dynamic = "force-dynamic";
@@ -14,8 +15,12 @@ function fmt(ms: number) {
 }
 
 export default async function MeetingPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
   const { id } = await params;
-  const meeting = db.prepare("SELECT * FROM meetings WHERE id = ?").get(id) as Meeting | undefined;
+  const meeting = db.prepare("SELECT * FROM meetings WHERE id = ? AND user_id = ?").get(id, user.id) as
+    | Meeting
+    | undefined;
   if (!meeting) notFound();
   const segments = db
     .prepare("SELECT id, speaker, text, ts_ms, bookmarked FROM segments WHERE meeting_id = ? ORDER BY ts_ms")

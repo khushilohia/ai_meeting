@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 type SegmentIn = { speaker?: string; text: string; tsMs: number };
 
 /** Batched transcript ingestion — the extension POSTs finalized segments every ~5s. */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = requireUser(req);
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
-  const meeting = db.prepare("SELECT id, ended_at FROM meetings WHERE id = ?").get(id) as
+  const meeting = db.prepare("SELECT id, ended_at FROM meetings WHERE id = ? AND user_id = ?").get(id, user.id) as
     | { ended_at: string | null }
     | undefined;
   if (!meeting) return NextResponse.json({ error: "not found" }, { status: 404 });

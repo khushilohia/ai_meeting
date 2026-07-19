@@ -1,15 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
 import SearchBar from "@/components/SearchBar";
 
 export const dynamic = "force-dynamic";
 
 type MeetingRow = { id: number; title: string; started_at: string; ended_at: string | null; has_summary: number };
 
-export default function Dashboard() {
+export default async function Dashboard() {
+  const user = await currentUser();
+  if (!user) redirect("/login");
   const meetings = db
-    .prepare("SELECT id, title, started_at, ended_at, summary IS NOT NULL AS has_summary FROM meetings ORDER BY started_at DESC LIMIT 50")
-    .all() as MeetingRow[];
+    .prepare(
+      "SELECT id, title, started_at, ended_at, summary IS NOT NULL AS has_summary FROM meetings WHERE user_id = ? ORDER BY started_at DESC LIMIT 50"
+    )
+    .all(user.id) as MeetingRow[];
 
   return (
     <div className="space-y-8">

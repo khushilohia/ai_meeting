@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { search } from "@/lib/retrieval";
 import { answer } from "@/lib/claude";
+import { requireUser } from "@/lib/auth";
 
 const client = new Anthropic();
 
@@ -10,6 +11,8 @@ const client = new Anthropic();
  * there's a question or info-need worth answering from the KB. If yes, answer it.
  */
 export async function POST(req: NextRequest) {
+  const user = requireUser(req);
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { recentTranscript } = (await req.json()) as { recentTranscript?: string };
   if (!recentTranscript?.trim()) {
     return NextResponse.json({ error: "recentTranscript is required" }, { status: 400 });
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
   const { query } = JSON.parse(text?.type === "text" ? text.text : "{}") as { query: string | null };
   if (!query) return NextResponse.json({ query: null, suggestion: null });
 
-  const chunks = await search(query);
+  const chunks = await search(query, user.id);
   if (chunks.length === 0) return NextResponse.json({ query, suggestion: null });
   const suggestion = await answer(query, chunks);
   // Don't surface low-confidence suggestions mid-meeting — they erode trust fast (PRD risk).

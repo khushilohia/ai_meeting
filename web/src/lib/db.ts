@@ -10,6 +10,19 @@ db.pragma("busy_timeout = 5000");
 db.pragma("journal_mode = WAL");
 
 db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  api_token TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS documents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -44,11 +57,18 @@ CREATE INDEX IF NOT EXISTS idx_chunks_document ON chunks(document_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_meeting ON chunks(meeting_id);
 `);
 
-// migration: bookmarks (Phase 4) — no-op if the column already exists
-try {
-  db.exec("ALTER TABLE segments ADD COLUMN bookmarked INTEGER NOT NULL DEFAULT 0");
-} catch {
-  /* column exists */
+// migrations — each no-op if the column already exists
+for (const stmt of [
+  "ALTER TABLE segments ADD COLUMN bookmarked INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE meetings ADD COLUMN user_id INTEGER REFERENCES users(id)",
+  "ALTER TABLE meetings ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'",
+  "ALTER TABLE documents ADD COLUMN user_id INTEGER REFERENCES users(id)",
+]) {
+  try {
+    db.exec(stmt);
+  } catch {
+    /* column exists */
+  }
 }
 
 export function embeddingToBuffer(v: number[]): Buffer {

@@ -30,9 +30,9 @@ export async function ingest(
   return chunks.length;
 }
 
-/** Top-k cosine search over all chunks. */
+/** Top-k cosine search over the user's chunks. */
 // ponytail: full scan over every embedding — fine to ~50k chunks; move to pgvector beyond that.
-export async function search(query: string, k = 6): Promise<RetrievedChunk[]> {
+export async function search(query: string, userId: number, k = 6): Promise<RetrievedChunk[]> {
   const [qVec] = await embed([query], "query");
   const rows = db
     .prepare(
@@ -40,9 +40,10 @@ export async function search(query: string, k = 6): Promise<RetrievedChunk[]> {
               COALESCE(d.title, m.title, 'unknown') AS source
        FROM chunks c
        LEFT JOIN documents d ON d.id = c.document_id
-       LEFT JOIN meetings m ON m.id = c.meeting_id`
+       LEFT JOIN meetings m ON m.id = c.meeting_id
+       WHERE d.user_id = ? OR m.user_id = ?`
     )
-    .all() as { id: number; content: string; embedding: Buffer; document_id: number | null; meeting_id: number | null; source: string }[];
+    .all(userId, userId) as { id: number; content: string; embedding: Buffer; document_id: number | null; meeting_id: number | null; source: string }[];
 
   return rows
     .map((r) => ({

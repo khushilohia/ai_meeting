@@ -57,10 +57,16 @@ Action: send Tom the security FAQ and the 2-year term sheet.`,
     { q: "When does Tom need to confirm with legal?", expectSource: "Globex", expectInAnswer: /June 15/i },
   ];
 
-  // fresh seed
-  db.exec("DELETE FROM chunks; DELETE FROM documents;");
+  // fresh seed under a dedicated test user
+  const { hashPassword, newApiToken } = await import("../src/lib/auth");
+  db.exec("DELETE FROM chunks; DELETE FROM documents; DELETE FROM users WHERE email = 'phase0@test.local';");
+  const userId = Number(
+    db
+      .prepare("INSERT INTO users (email, name, password_hash, api_token) VALUES (?, ?, ?, ?)")
+      .run("phase0@test.local", "Phase0", hashPassword("phase0-test-pw"), newApiToken()).lastInsertRowid
+  );
   for (const d of docs) {
-    const { lastInsertRowid } = db.prepare("INSERT INTO documents (title) VALUES (?)").run(d.title);
+    const { lastInsertRowid } = db.prepare("INSERT INTO documents (title, user_id) VALUES (?, ?)").run(d.title, userId);
     await ingest(d.content, { documentId: Number(lastInsertRowid) });
   }
   console.log(`Seeded ${docs.length} docs.\n`);
@@ -71,7 +77,7 @@ Action: send Tom the security FAQ and the 2-year term sheet.`,
 
   for (const { q, expectSource, expectInAnswer } of questions) {
     const t0 = Date.now();
-    const chunks = await search(q);
+    const chunks = await search(q, userId);
     const retrieved = chunks[0]?.source.includes(expectSource) ?? false;
     const result = await answer(q, chunks);
     const ms = Date.now() - t0;

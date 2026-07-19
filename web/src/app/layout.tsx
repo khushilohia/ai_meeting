@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import Link from "next/link";
+import { currentUser } from "@/lib/auth";
+import UserMenu from "@/components/UserMenu";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -10,7 +12,8 @@ export const metadata: Metadata = {
   description: "Company-aware answers during your meetings",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const user = await currentUser();
   return (
     <html lang="en" className={`${geistSans.variable} antialiased`}>
       <body className="min-h-screen bg-zinc-50 font-sans text-zinc-900">
@@ -25,6 +28,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/knowledge" className="text-sm text-zinc-600 hover:text-zinc-900">
               Knowledge
             </Link>
+            {user ? (
+              <UserMenu name={user.name} />
+            ) : (
+              <Link href="/login" className="ml-auto text-sm text-zinc-600 hover:text-zinc-900">
+                Sign in
+              </Link>
+            )}
           </div>
         </nav>
         <main className="mx-auto max-w-4xl px-4 py-8">{children}</main>
