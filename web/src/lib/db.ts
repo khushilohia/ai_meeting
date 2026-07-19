@@ -9,7 +9,19 @@ export const db = new Database(path.join(dataDir, "app.db"));
 db.pragma("busy_timeout = 5000");
 db.pragma("journal_mode = WAL");
 
-db.exec(`
+// Schema init can race across parallel Next.js build workers — retry on SQLITE_BUSY.
+function execWithRetry(sql: string, attempts = 10) {
+  for (let i = 0; ; i++) {
+    try {
+      return db.exec(sql);
+    } catch (e) {
+      if (i >= attempts - 1 || (e as { code?: string }).code !== "SQLITE_BUSY") throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100 * (i + 1)); // sync sleep
+    }
+  }
+}
+
+execWithRetry(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
@@ -65,7 +77,7 @@ for (const stmt of [
   "ALTER TABLE documents ADD COLUMN user_id INTEGER REFERENCES users(id)",
 ]) {
   try {
-    db.exec(stmt);
+    execWithRetry(stmt); // retries BUSY; only "duplicate column" falls through
   } catch {
     /* column exists */
   }
