@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light dark; }
+      body { font: 13px/1.5 system-ui, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; height: 100vh; box-sizing: border-box; }
+      button { border: 0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; }
+      #startBtn { background: #047857; color: #fff; }
+      #endBtn { background: #b91c1c; color: #fff; display: none; }
+      input { border: 1px solid #999; border-radius: 6px; padding: 7px 10px; font-size: 13px; width: 100%; box-sizing: border-box; }
+      #transcript { flex: 1; overflow-y: auto; border: 1px solid #ccc; border-radius: 8px; padding: 8px; font-size: 12.5px; }
+      #transcript .interim { opacity: 0.5; }
+      #answer { border-radius: 8px; padding: 10px; background: rgba(4, 120, 87, 0.1); display: none; }
+      #answer.low { background: rgba(217, 119, 6, 0.12); }
+      #answer .src { font-size: 11px; opacity: 0.7; margin-top: 6px; }
+      #suggestions { display: flex; flex-direction: column; gap: 6px; }
+      .suggestion { border: 1px solid #047857; border-radius: 8px; padding: 8px; background: rgba(4,120,87,0.06); }
+      .suggestion .dismiss { float: right; cursor: pointer; opacity: 0.5; }
+      #status { font-size: 11px; opacity: 0.6; }
+      details { font-size: 11px; opacity: 0.7; }
+    </style>
+  </head>
+  <body>
+    <div style="display:flex; gap:8px">
+      <button id="startBtn">▶ Start copilot</button>
+      <button id="endBtn">■ End meeting</button>
+    </div>
+    <div id="status">Idle</div>
+    <form id="askForm">
+      <input id="askInput" placeholder="Quick lookup — ask your knowledge base…" />
+    </form>
+    <div id="answer"></div>
+    <div id="suggestions"></div>
+    <div id="transcript"></div>
+    <details>
+      <summary>Settings</summary>
+      <label>API base <input id="apiBase" placeholder="http://localhost:3000" /></label>
+    </details>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
