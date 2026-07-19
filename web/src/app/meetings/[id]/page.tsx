@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import TranscriptSegment from "@/components/TranscriptSegment";
 
 export const dynamic = "force-dynamic";
 
 type Meeting = { id: number; title: string; started_at: string; ended_at: string | null; summary: string | null; action_items: string | null };
-type Segment = { id: number; speaker: string | null; text: string; ts_ms: number };
+type Segment = { id: number; speaker: string | null; text: string; ts_ms: number; bookmarked: number };
 
 function fmt(ms: number) {
   const s = Math.floor(ms / 1000);
@@ -17,7 +18,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
   const meeting = db.prepare("SELECT * FROM meetings WHERE id = ?").get(id) as Meeting | undefined;
   if (!meeting) notFound();
   const segments = db
-    .prepare("SELECT id, speaker, text, ts_ms FROM segments WHERE meeting_id = ? ORDER BY ts_ms")
+    .prepare("SELECT id, speaker, text, ts_ms, bookmarked FROM segments WHERE meeting_id = ? ORDER BY ts_ms")
     .all(id) as Segment[];
   const actionItems: string[] = meeting.action_items ? JSON.parse(meeting.action_items) : [];
 
@@ -56,17 +57,22 @@ export default async function MeetingPage({ params }: { params: Promise<{ id: st
       )}
 
       <section>
-        <h2 className="mb-2 font-semibold">Transcript</h2>
+        <h2 className="mb-2 font-semibold">
+          Transcript <span className="text-xs font-normal text-zinc-400">(double-click a line to edit · hover for 🔖)</span>
+        </h2>
         {segments.length === 0 ? (
           <p className="text-sm text-zinc-500">No transcript.</p>
         ) : (
           <div className="space-y-2 rounded-lg border border-zinc-200 bg-white p-4">
             {segments.map((s) => (
-              <p key={s.id} className="text-sm">
-                <span className="mr-2 font-mono text-xs text-zinc-400">{fmt(s.ts_ms)}</span>
-                {s.speaker && <span className="mr-1 font-medium">{s.speaker}:</span>}
-                {s.text}
-              </p>
+              <TranscriptSegment
+                key={s.id}
+                id={s.id}
+                speaker={s.speaker}
+                text={s.text}
+                tsLabel={fmt(s.ts_ms)}
+                bookmarked={s.bookmarked === 1}
+              />
             ))}
           </div>
         )}
